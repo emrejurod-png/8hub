@@ -114,8 +114,34 @@
   }
 
   // ============ RINGTONE & NOTIFS ============
-  function startRingtone() { /* Simplification: Can use a beep for incoming calls */ }
-  function stopRingtone() {}
+  function startRingtone() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      state.ringtoneCtx = ctx;
+      function playTone() {
+        if (!state.ringtoneCtx || state.ringtoneCtx.state === 'closed') return;
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc1.type = 'sine'; osc1.frequency.value = 440;
+        osc2.type = 'sine'; osc2.frequency.value = 480;
+        gain.gain.value = 0.15;
+        osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
+        const now = ctx.currentTime;
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.setValueAtTime(0, now + 0.8);
+        osc1.start(now); osc2.start(now);
+        osc1.stop(now + 0.8); osc2.stop(now + 0.8);
+        state.ringtoneOscillator = setTimeout(playTone, 2500);
+      }
+      playTone();
+    } catch (e) {}
+  }
+
+  function stopRingtone() {
+    if (state.ringtoneOscillator) { clearTimeout(state.ringtoneOscillator); state.ringtoneOscillator = null; }
+    if (state.ringtoneCtx) { state.ringtoneCtx.close().catch(() => {}); state.ringtoneCtx = null; }
+  }
   function playMessageSound() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -338,6 +364,7 @@
     try {
       state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
       dom.localVideo.srcObject = state.localStream;
+      dom.localVideo.play().catch(e => console.log('Local video play error:', e));
       setupPeerConnection(state.selectedUser.name);
       
       const offer = await state.peerConnection.createOffer();
@@ -369,6 +396,7 @@
     try {
       state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' });
       dom.localVideo.srcObject = state.localStream;
+      dom.localVideo.play().catch(e => console.log('Local video play error:', e));
       setupPeerConnection(callerName);
 
       await state.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
@@ -405,6 +433,7 @@
       if (!state.remoteStream) state.remoteStream = new MediaStream();
       state.remoteStream.addTrack(e.track);
       dom.remoteVideo.srcObject = state.remoteStream;
+      dom.remoteVideo.play().catch(err => console.log('Remote video play error:', err));
     };
 
     state.peerConnection.onicecandidate = (e) => {
@@ -683,11 +712,55 @@
   }
 
   // ============ VOICE NOTES ============
+  let recordAudioCtx, recordAnalyser, recordDataArray, recordAnimId;
+  let recordStartTime, recordTimerId;
+
+  function drawVisualizer() {
+    const canvas = document.getElementById('recording-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    recordAnimId = requestAnimationFrame(drawVisualizer);
+    recordAnalyser.getByteFrequencyData(recordDataArray);
+
+    ctx.clearRect(0, 0, width, height);
+    const barWidth = (width / recordDataArray.length) * 2.5;
+    let barHeight;
+    let x = 0;
+
+    for (let i = 0; i < recordDataArray.length; i++) {
+      barHeight = recordDataArray[i] / 255 * height;
+      ctx.fillStyle = `rgb(${recordDataArray[i] + 100}, 50, 250)`;
+      ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+      x += barWidth + 2;
+    }
+  }
+
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       state.mediaRecorder = new MediaRecorder(stream);
       state.audioChunks = [];
+      
+      // VISUALIZER
+      recordAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = recordAudioCtx.createMediaStreamSource(stream);
+      recordAnalyser = recordAudioCtx.createAnalyser();
+      recordAnalyser.fftSize = 64;
+      source.connect(recordAnalyser);
+      recordDataArray = new Uint8Array(recordAnalyser.frequencyBinCount);
+      
+      document.getElementById('recording-overlay').classList.remove('hidden');
+      recordStartTime = Date.now();
+      document.getElementById('recording-time').textContent = '00:00';
+      recordTimerId = setInterval(() => {
+        const s = Math.floor((Date.now() - recordStartTime) / 1000);
+        document.getElementById('recording-time').textContent = formatTime(s);
+      }, 1000);
+      drawVisualizer();
+
       state.mediaRecorder.ondataavailable = e => state.audioChunks.push(e.data);
       state.mediaRecorder.onstop = () => {
         const audioBlob = new Blob(state.audioChunks, { type: 'audio/webm' });
@@ -707,6 +780,11 @@
     if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
       state.mediaRecorder.stop();
       dom.voiceRecordBtn.classList.remove('recording');
+      
+      document.getElementById('recording-overlay').classList.add('hidden');
+      clearInterval(recordTimerId);
+      cancelAnimationFrame(recordAnimId);
+      if (recordAudioCtx) { recordAudioCtx.close().catch(()=>{}); recordAudioCtx = null; }
     }
   }
 

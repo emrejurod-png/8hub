@@ -147,6 +147,16 @@
             <span id="typing-name">yazıyor...</span>
           </div>
 
+          <!-- Voice Recording Visualizer (Hidden by default) -->
+          <div id="recording-overlay" class="recording-overlay hidden">
+            <div class="recording-status">
+              <div class="recording-dot"></div>
+              <span id="recording-time">00:00</span>
+            </div>
+            <canvas id="recording-canvas" width="200" height="40"></canvas>
+            <div class="recording-hint">Sesi göndermek için bırakın</div>
+          </div>
+
           <!-- Chat input -->
           <div class="chat-input-area">
             <input type="file" id="image-input" accept="image/*" style="display:none;">

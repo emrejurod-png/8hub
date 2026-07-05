@@ -467,18 +467,54 @@ body::after {
 .btn-attach:hover { color: var(--text-primary); background: var(--surface-hover); }
 
 .btn-voice {
-  background: transparent; color: var(--text-muted);
+  background: transparent; color: var(--text-muted); transition: all 0.2s ease;
 }
 .btn-voice:hover { color: var(--primary); background: rgba(59, 130, 246, 0.1); }
 .btn-voice.recording {
-  color: var(--danger);
-  animation: pulse-record 1.5s infinite;
+  color: var(--danger); background: rgba(239, 68, 68, 0.15);
+  transform: scale(1.15);
 }
 
-@keyframes pulse-record {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
+.recording-overlay {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; background: rgba(10, 14, 39, 0.9);
+  border-top: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  position: absolute; bottom: 100%; left: 0; right: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.recording-overlay.hidden {
+  opacity: 0; transform: translateY(10px); pointer-events: none;
+}
+
+.recording-status {
+  display: flex; align-items: center; gap: 8px; font-weight: 600; color: #fff;
+}
+
+.recording-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--danger);
+  animation: pulse-red 1s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+#recording-canvas {
+  flex: 1; margin: 0 15px; height: 35px; border-radius: 4px;
+}
+
+.recording-hint {
+  font-size: 0.8rem; color: var(--text-muted); animation: pulse-opacity 2s infinite;
+}
+
+@keyframes pulse-opacity {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 .chat-input-area input[type="text"] {
