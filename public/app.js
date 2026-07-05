@@ -129,6 +129,12 @@
     } catch (e) {}
   }
 
+  function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+
   function sendNotification(title, body) {
     if ('Notification' in window && Notification.permission === 'granted') {
       try { new Notification(title, { body, tag: '8hub', renotify: true, vibrate: [200, 100, 200] }); } catch (e) {}
