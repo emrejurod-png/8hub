@@ -706,12 +706,20 @@
 
   // ============ INIT ============
   function init() {
-    requestNotificationPermission();
-    loadFriends();
-    initSocket();
-    bindEvents();
-    const savedName = localStorage.getItem('8hub_name');
-    if (savedName) { dom.userNameInput.value = savedName; dom.joinBtn.click(); }
+    try {
+      requestNotificationPermission();
+      loadFriends();
+      initSocket();
+      bindEvents();
+      const savedName = localStorage.getItem('8hub_name');
+      if (savedName) { 
+        dom.userNameInput.value = savedName; 
+        dom.joinBtn.disabled = false;
+        dom.joinBtn.click(); 
+      }
+    } catch (e) {
+      alert("App.js Error: " + e.message + "\n" + e.stack);
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
