@@ -3,6 +3,7 @@
     socket: null,
     myName: '',
     friends: [], // Loaded from localStorage: [{name}]
+    chats: {}, // Loaded from localStorage
     onlineUsers: [], // Loaded from server: ['name1', 'name2']
     selectedUser: null, // { name, socketId }
     peerConnection: null,
@@ -167,7 +168,7 @@
     }
   }
 
-  // ============ FRIEND SYSTEM ============
+  // ============ DATA STORAGE ============
   function loadFriends() {
     const saved = localStorage.getItem('8hub_friends');
     if (saved) state.friends = JSON.parse(saved);
@@ -176,6 +177,16 @@
 
   function saveFriends() {
     localStorage.setItem('8hub_friends', JSON.stringify(state.friends));
+  }
+
+  function loadChats() {
+    const saved = localStorage.getItem('8hub_chats');
+    if (saved) state.chats = JSON.parse(saved);
+    else state.chats = {};
+  }
+
+  function saveChats() {
+    localStorage.setItem('8hub_chats', JSON.stringify(state.chats));
   }
 
   function addFriend(name) {
@@ -188,7 +199,6 @@
 
   // ============ USER LIST ============
   function renderUserList(filter = '') {
-    // Only show friends from state.friends
     const filtered = filter
       ? state.friends.filter(f => f.name.toLowerCase().includes(filter.toLowerCase()))
       : state.friends;
@@ -238,9 +248,13 @@
     const isOnline = state.onlineUsers.includes(name);
     dom.chatPartnerStatus.textContent = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
 
-    // Fetch message history
-    dom.messagesContainer.innerHTML = '<div class="empty-chat"><p>Yükleniyor...</p></div>';
-    state.socket.emit('get-messages', { withUser: name });
+    dom.messagesContainer.innerHTML = '';
+    const history = state.chats[name] || [];
+    if (history.length === 0) {
+      dom.messagesContainer.innerHTML = '<div class="empty-chat"><p>Henüz mesaj yok. İlk mesajı sen gönder!</p></div>';
+    } else {
+      history.forEach(msg => appendMessage(msg));
+    }
   }
 
   // ============ MESSAGING ============
@@ -250,7 +264,6 @@
   }
 
   function appendMessage(msg) {
-    // Prevent rendering viewOnce messages we've already read
     if (msg.isViewOnce && msg.status === 'read' && msg.from !== state.myName) return;
 
     const isMine = msg.from === state.myName;
@@ -262,14 +275,16 @@
     const div = document.createElement('div');
     div.id = `msg-${msg.id}`;
     
-    const isEmoji = !msg.image && !msg.audio && isEmojiOnly(msg.text);
+    const isEmoji = !msg.isDeleted && !msg.image && !msg.audio && msg.text && isEmojiOnly(msg.text);
     div.className = `message-bubble ${isMine ? 'sent' : 'received'} ${isEmoji ? 'emoji-only' : ''}`;
     
     let ticks = '';
     if (isMine) ticks = `<span class="read-receipt ${msg.status === 'read' ? 'read' : ''}">✓✓</span>`;
 
     let contentHtml = '';
-    if (msg.isViewOnce) {
+    if (msg.isDeleted) {
+      contentHtml += `<div style="font-style:italic; color:var(--text-muted);">🚫 Bu mesaj silindi</div>`;
+    } else if (msg.isViewOnce) {
       if (isMine) {
         contentHtml += `<div style="color:var(--danger)">💣 Tek Gösterimlik Gönderildi</div>`;
       } else {
@@ -279,14 +294,14 @@
       contentHtml += `<img src="${msg.image}" class="message-image" onclick="window.open(this.src)" />`;
     }
     
-    if (msg.audio) {
+    if (!msg.isDeleted && msg.audio) {
       contentHtml += `<audio controls class="audio-message"><source src="${msg.audio}" type="audio/webm"></audio>`;
     }
-    if (msg.text) {
+    if (!msg.isDeleted && msg.text) {
       contentHtml += `<div>${escapeHtml(msg.text)}</div>`;
     }
 
-    const deleteBtn = isMine ? `<button class="btn-delete-msg" onclick="deleteMessage('${msg.id}')" title="Herkesten Sil">🗑️</button>` : '';
+    const deleteBtn = (isMine && !msg.isDeleted) ? `<button class="btn-delete-msg" onclick="deleteMessage('${msg.id}')" title="Herkesten Sil">🗑️</button>` : '';
 
     div.innerHTML = `
       ${contentHtml}
@@ -305,7 +320,6 @@
   };
 
   window.viewOnceMessage = function(messageId, base64Image) {
-    // Show image in a fullscreen overlay
     const overlay = document.createElement('div');
     overlay.style.position = 'fixed'; overlay.style.inset = '0';
     overlay.style.background = 'rgba(0,0,0,0.9)'; overlay.style.zIndex = '9999';
@@ -319,7 +333,6 @@
     `;
     document.body.appendChild(overlay);
 
-    // Delete message when closed
     const observer = new MutationObserver(() => {
       if (!document.body.contains(overlay)) {
         if (state.selectedUser) state.socket.emit('delete-message', { messageId, withUser: state.selectedUser.name });
@@ -529,7 +542,6 @@
     // Friend Requests
     state.socket.on('friend-request-received', ({ from }) => {
       showToast(`👋 ${from} sana arkadaşlık isteği gönderdi!`);
-      // Auto-accept for simplicity and usability for older people
       addFriend(from);
       state.socket.emit('accept-friend-request', { from });
       showToast(`✅ ${from} eklendi.`);
@@ -546,11 +558,22 @@
 
     // Messaging
     state.socket.on('message-history', ({ withUser, messages }) => {
-      dom.messagesContainer.innerHTML = '';
-      messages.forEach(msg => appendMessage(msg));
+      state.chats[withUser] = messages;
+      saveChats();
+      if (state.selectedUser && state.selectedUser.name === withUser) {
+        dom.messagesContainer.innerHTML = '';
+        messages.forEach(msg => appendMessage(msg));
+      }
     });
 
     state.socket.on('new-message', (msg) => {
+      if (!msg.isViewOnce) {
+        const partner = msg.from === state.myName ? msg.to : msg.from;
+        if (!state.chats[partner]) state.chats[partner] = [];
+        state.chats[partner].push(msg);
+        saveChats();
+      }
+
       const isCurrentChat = state.selectedUser && (
         (msg.from === state.selectedUser.name && msg.to === state.myName) ||
         (msg.from === state.myName && msg.to === state.selectedUser.name)
@@ -568,12 +591,23 @@
     });
 
     state.socket.on('messages-read', ({ by }) => {
+      if (state.chats[by]) {
+        state.chats[by].forEach(m => { if (m.from === state.myName) m.status = 'read'; });
+        saveChats();
+      }
       if (state.selectedUser && state.selectedUser.name === by) {
         dom.messagesContainer.querySelectorAll('.sent .read-receipt:not(.read)').forEach(el => el.classList.add('read'));
       }
     });
 
     state.socket.on('message-deleted', ({ messageId }) => {
+      Object.keys(state.chats).forEach(partner => {
+        const m = state.chats[partner].find(x => x.id === messageId);
+        if (m) {
+          m.text = ''; m.image = null; m.audio = null; m.isDeleted = true;
+          saveChats();
+        }
+      });
       const el = document.getElementById(`msg-${messageId}`);
       if (el) {
         el.className = 'message-bubble received';
@@ -793,6 +827,7 @@
     try {
       requestNotificationPermission();
       loadFriends();
+      loadChats();
       initSocket();
       bindEvents();
       const savedName = localStorage.getItem('8hub_name');

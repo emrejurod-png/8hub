@@ -215,9 +215,18 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('answer-call', ({ to, answer }) => { io.to(to).emit('call-answered', { from: socket.id, answer }); });
-  socket.on('reject-call', ({ to }) => { io.to(to).emit('call-rejected', { from: socket.id }); });
-  socket.on('end-call', ({ to }) => { io.to(to).emit('call-ended', { from: socket.id }); });
+  socket.on('answer-call', ({ to, answer }) => {
+    const sId = nameToSocket.get(to);
+    if (sId) io.to(sId).emit('call-answered', { from: socket.id, answer });
+  });
+  socket.on('reject-call', ({ to }) => {
+    const sId = nameToSocket.get(to);
+    if (sId) io.to(sId).emit('call-rejected', { from: socket.id });
+  });
+  socket.on('end-call', ({ to }) => {
+    const sId = nameToSocket.get(to);
+    if (sId) io.to(sId).emit('call-ended', { from: socket.id });
+  });
   
   socket.on('camera-status', ({ to, isCameraOff }) => {
     const recipientSocketId = nameToSocket.get(to);
@@ -225,7 +234,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('ice-candidate', ({ to, candidate }) => {
-    io.to(to).emit('ice-candidate', { from: socket.id, candidate });
+    const sId = nameToSocket.get(to);
+    if (sId) io.to(sId).emit('ice-candidate', { from: socket.id, candidate });
   });
 
   // ---- Disconnect ----
