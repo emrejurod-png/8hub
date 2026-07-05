@@ -20,7 +20,8 @@
     ringtoneCtx: null,
     typingTimeout: null,
     mediaRecorder: null,
-    audioChunks: []
+    audioChunks: [],
+    pendingIceCandidates: []
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -413,6 +414,15 @@
       setupPeerConnection(callerName);
 
       await state.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      
+      // Process queued candidates
+      if (state.pendingIceCandidates.length > 0) {
+        for (let c of state.pendingIceCandidates) {
+          try { await state.peerConnection.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
+        }
+        state.pendingIceCandidates = [];
+      }
+
       const answer = await state.peerConnection.createAnswer();
       await state.peerConnection.setLocalDescription(answer);
 
@@ -466,9 +476,12 @@
   }
 
   function endCallCleanup() {
-    state.inCall = false;
-    if (state.localStream) { state.localStream.getTracks().forEach(t => t.stop()); state.localStream = null; }
     if (state.peerConnection) { state.peerConnection.close(); state.peerConnection = null; }
+    if (state.localStream) { state.localStream.getTracks().forEach(t => t.stop()); state.localStream = null; }
+    if (state.remoteStream) { state.remoteStream.getTracks().forEach(t => t.stop()); state.remoteStream = null; }
+    state.inCall = false;
+    state.incomingCallData = null;
+    state.pendingIceCandidates = []; 
     dom.localVideo.srcObject = null; dom.remoteVideo.srcObject = null;
     if (state.callTimerInterval) { clearInterval(state.callTimerInterval); state.callTimerInterval = null; }
     state.isMuted = false; state.isCameraOff = false;
@@ -636,6 +649,15 @@
     state.socket.on('call-answered', async ({ answer }) => {
       if (state.peerConnection) {
         await state.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        
+        // Process queued candidates
+        if (state.pendingIceCandidates.length > 0) {
+          for (let c of state.pendingIceCandidates) {
+            try { await state.peerConnection.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
+          }
+          state.pendingIceCandidates = [];
+        }
+
         dom.callStatusText.textContent = 'Bağlandı!'; startCallTimer();
       }
     });
@@ -643,7 +665,11 @@
     state.socket.on('call-rejected', () => { showToast('❌ Arama reddedildi'); endCallCleanup(); });
     state.socket.on('call-ended', () => { showToast('📞 Arama sonlandırıldı'); endCallCleanup(); });
     state.socket.on('ice-candidate', async ({ candidate }) => {
-      if (state.peerConnection && candidate) { try { await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) {} }
+      if (state.peerConnection && state.peerConnection.remoteDescription) { 
+        try { await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) {} 
+      } else {
+        state.pendingIceCandidates.push(candidate);
+      }
     });
     state.socket.on('camera-status', ({ isCameraOff }) => {
       const overlay = document.getElementById('remote-camera-off-overlay');
