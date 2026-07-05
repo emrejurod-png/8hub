@@ -1,0 +1,17 @@
+{
+  "name": "8hub",
+  "short_name": "8hub",
+  "description": "Aile arama ve mesajlaşma uygulaması",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e27",
+  "theme_color": "#0a0e27",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230a0e27'/%3E%3Ccircle cx='96' cy='96' r='70' stroke='url(%23g)' stroke-width='6' fill='none'/%3E%3Cpath d='M66 80c0-16.569 13.431-30 30-30s30 13.431 30 30v5c0 7.5-3.75 13.75-10 17.5l-2.5 1.75V120a5 5 0 01-5 5H83.5a5 5 0 01-5-5v-15.75L76 102.5C72.25 98.75 66 92.5 66 85V80z' fill='%2300d4aa'/%3E%3Ccircle cx='84' cy='82' r='5' fill='%230a0e27'/%3E%3Ccircle cx='108' cy='82' r='5' fill='%230a0e27'/%3E%3Cpath d='M84 98s5 7.5 12 7.5S108 98 108 98' stroke='%230a0e27' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='192' y2='192'%3E%3Cstop offset='0%25' stop-color='%2300d4aa'/%3E%3Cstop offset='100%25' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

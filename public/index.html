@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="description" content="8hub - Gerçek zamanlı görüntülü arama ve mesajlaşma">
+  <meta name="theme-color" content="#0a0e27">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>8hub 📞</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- ============ LOGIN SCREEN ============ -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <div class="logo-section">
+        <div class="logo-icon">
+          <svg width="72" height="72" viewBox="0 0 64 64" fill="none">
+            <rect x="2" y="2" width="60" height="60" rx="16" stroke="url(#logoGrad)" stroke-width="3" fill="rgba(0,212,170,0.08)"/>
+            <text x="32" y="42" text-anchor="middle" font-size="26" font-weight="800" fill="url(#logoGrad)" font-family="Inter, sans-serif">8hub</text>
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="64" y2="64">
+                <stop offset="0%" stop-color="#00d4aa"/>
+                <stop offset="100%" stop-color="#7c3aed"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="app-title">8hub</h1>
+        <p class="app-subtitle">Bağlan, Ara, Mesajlaş</p>
+      </div>
+
+      <div class="login-form glass-card">
+        <div class="input-group">
+          <label for="user-name">Adını Gir</label>
+          <input type="text" id="user-name" placeholder="Örn: Emre, Anne, Baba..." maxlength="20" autocomplete="off">
+          <p class="input-hint">💡 Bu isimle diğer kişiler seni görecek</p>
+        </div>
+        <button id="join-btn" class="btn btn-primary btn-large" disabled>
+          <span class="btn-icon">🚀</span>
+          Giriş Yap
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN SCREEN (WhatsApp Layout) ============ -->
+  <div id="main-screen" class="screen">
+    <div class="app-layout">
+      <!-- LEFT SIDEBAR -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header glass-card">
+          <div class="my-profile">
+            <div class="my-avatar-small">
+              <span id="my-initial-sidebar">?</span>
+            </div>
+            <h3 id="my-name-sidebar">—</h3>
+          </div>
+          <button id="logout-btn" class="btn btn-icon-only btn-danger-ghost" title="Çıkış Yap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+
+        <div class="sidebar-search">
+          <input type="text" id="search-users" placeholder="🔍 Kullanıcı ara..." autocomplete="off">
+        </div>
+
+        <div id="user-list" class="user-list">
+          <div class="empty-users">
+            <span class="empty-icon">👥</span>
+            <p>Henüz kimse çevrimiçi değil</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT PANEL -->
+      <main id="chat-panel" class="chat-panel">
+        <!-- Empty state -->
+        <div id="no-chat-selected" class="no-chat-selected">
+          <div class="empty-state-icon">
+            <svg width="80" height="80" viewBox="0 0 64 64" fill="none" opacity="0.3">
+              <rect x="2" y="2" width="60" height="60" rx="16" stroke="url(#emptyGrad)" stroke-width="2" fill="none"/>
+              <text x="32" y="42" text-anchor="middle" font-size="22" font-weight="800" fill="url(#emptyGrad)" font-family="Inter, sans-serif">8hub</text>
+              <defs>
+                <linearGradient id="emptyGrad" x1="0" y1="0" x2="64" y2="64">
+                  <stop offset="0%" stop-color="#00d4aa"/>
+                  <stop offset="100%" stop-color="#7c3aed"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h2>8hub'a Hoş Geldin!</h2>
+          <p>Soldaki listeden birini seç ve sohbete başla</p>
+        </div>
+
+        <!-- Active chat area (hidden by default) -->
+        <div id="active-chat" class="active-chat" style="display:none;">
+          <!-- Chat header -->
+          <div class="chat-top-bar glass-card">
+            <button id="back-to-sidebar" class="btn btn-icon-only btn-back" title="Geri">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15,18 9,12 15,6"/></svg>
+            </button>
+            <div class="chat-partner-info">
+              <div class="chat-avatar">
+                <span id="chat-partner-initial">?</span>
+                <div class="chat-online-dot"></div>
+              </div>
+              <div>
+                <h3 id="chat-partner-name">—</h3>
+                <span id="chat-partner-status" class="status-text">Çevrimiçi</span>
+              </div>
+            </div>
+            <div class="chat-top-actions">
+              <button id="top-voice-btn" class="btn btn-icon-only btn-call-top" title="Sesli Ara">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+              </button>
+              <button id="top-video-btn" class="btn btn-icon-only btn-call-top" title="Görüntülü Ara">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23,7 16,12 23,17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Messages area -->
+          <div id="messages-container" class="messages-container">
+            <div class="empty-chat">
+              <span class="empty-icon">💬</span>
+              <p>Henüz mesaj yok. İlk mesajı sen gönder!</p>
+            </div>
+          </div>
+
+          <!-- Typing indicator -->
+          <div id="typing-indicator" class="typing-indicator-bar" style="display:none;">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span id="typing-name">yazıyor...</span>
+          </div>
+
+          <!-- Chat input -->
+          <div class="chat-input-area">
+            <input type="text" id="message-input" placeholder="Mesaj yaz..." maxlength="500" autocomplete="off">
+            <button id="send-msg-btn" class="btn btn-send" title="Gönder">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ CALL SCREEN ============ -->
+  <div id="call-screen" class="screen">
+    <div class="call-container">
+      <div class="video-area">
+        <video id="remote-video" autoplay playsinline></video>
+        <video id="local-video" autoplay playsinline muted></video>
+        <div id="call-status-overlay" class="call-status-overlay">
+          <div class="caller-avatar-large">
+            <span id="call-partner-initial">?</span>
+          </div>
+          <h2 id="call-partner-name-display">—</h2>
+          <p id="call-status-text">Arıyor...</p>
+          <p id="call-timer" class="call-timer" style="display:none;">00:00</p>
+        </div>
+      </div>
+      <div class="call-controls glass-card">
+        <button id="toggle-mute-btn" class="btn btn-control" title="Sessize Al">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <span>Mikrofon</span>
+        </button>
+        <button id="toggle-camera-btn" class="btn btn-control" title="Kamerayı Kapat">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23,7 16,12 23,17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          <span>Kamera</span>
+        </button>
+        <button id="end-call-btn" class="btn btn-end-call" title="Aramayı Kapat">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          <span>Kapat</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INCOMING CALL MODAL ============ -->
+  <div id="incoming-call-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="incoming-call-card glass-card">
+      <div class="incoming-animation">
+        <div class="ring-pulse"></div>
+        <div class="ring-pulse delay-1"></div>
+        <div class="ring-pulse delay-2"></div>
+        <div class="caller-avatar-incoming">
+          <span id="incoming-caller-initial">?</span>
+        </div>
+      </div>
+      <h2 id="incoming-caller-name">Birisi</h2>
+      <p id="incoming-call-type">seni arıyor...</p>
+      <div class="incoming-call-actions">
+        <button id="reject-btn" class="btn btn-reject">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91"/></svg>
+          <span>Reddet</span>
+        </button>
+        <button id="accept-btn" class="btn btn-accept">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          <span>Kabul Et</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
